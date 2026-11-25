@@ -1,4 +1,3 @@
-/** @OnlyCurrentDoc */
 function doGet(e) {
   const sheet = SpreadsheetApp.openById('1Nz745kUTwFhXCzyAKOVZ3vaUs8Jkvydt67JEZ1PkAuU').getSheetById(0);
   const range = sheet.getDataRange();
