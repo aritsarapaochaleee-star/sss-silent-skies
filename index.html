@@ -6,4 +6,31 @@
 </script><script>
 const grid=document.querySelector('#grid'),search=document.querySelector('#search'),summary=document.querySelector('#summary'),toast=document.querySelector('#toast');let timer;
 function render(){const q=search.value.trim().toLowerCase();const rows=BUFFS.filter(r=>(r.name+' '+r.codes.join(' ')).toLowerCase().includes(q));grid.replaceChildren();summary.textContent=rows.length+' บัฟ · แตะเลขบ้านเพื่อคัดลอก';for(const row of rows){const card=document.createElement('article');card.className='card';const match=row.name.match(/^(.*?)\s*\((.*?)\)$/);const title=match?match[1]:row.name;const en=match?match[2]:'CHARACTER STAT';const head=document.createElement('div');head.className='card-head';head.innerHTML='<span class="symbol" aria-hidden="true">✧</span><span class="count">'+row.codes.length+' เลขบ้าน</span>';card.append(head);const h=document.createElement('h3');h.textContent=title;card.append(h);const e=document.createElement('div');e.className='en';e.textContent=en;card.append(e);const codes=document.createElement('div');codes.className='codes';for(const raw of row.codes){const m=raw.match(/^(\d+)(?:\s*\((.*?)\))?$/);const code=m?m[1]:raw;const b=document.createElement('button');b.className='code';b.type='button';b.setAttribute('aria-label','คัดลอกเลขบ้าน '+code+' สำหรับ '+row.name);b.append(document.createTextNode(code));if(m?.[2]){const lv=document.createElement('small');lv.textContent=m[2];b.append(lv)}const icon=document.createElement('span');icon.className='copy-icon';icon.setAttribute('aria-hidden','true');icon.textContent='⧉';b.append(icon);b.onclick=async()=>{try{await navigator.clipboard.writeText(code);notify('คัดลอก '+code+' แล้ว')}catch{const t=document.createElement('textarea');t.value=code;document.body.append(t);t.select();const ok=document.execCommand('copy');t.remove();notify(ok?'คัดลอก '+code+' แล้ว':'คัดลอกไม่ได้ กรุณาคัดลอกเลข '+code+' ด้วยตนเอง')}};codes.append(b)}card.append(codes);grid.append(card)}if(!rows.length){const p=document.createElement('p');p.className='empty';p.textContent='ไม่พบบัฟหรือเลขบ้านที่ค้นหา ลองคำอื่นอีกครั้งนะ';grid.append(p)}}function notify(t){clearTimeout(timer);toast.textContent=t;toast.hidden=false;timer=setTimeout(()=>toast.hidden=true,2400)}search.addEventListener('input',render);render();
+</script>
+<script src="config.js"></script>
+<script>
+(function(){
+ const endpoint=window.SSS_FEED_URL;
+ if(!endpoint || !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint)) return;
+ const foot=document.querySelector('footer > span:last-child');
+ let pending=false, timer, active;
+ function cleanup(){clearTimeout(timer);if(active){active.remove();active=null;}pending=false;}
+ function failed(){cleanup();foot.textContent='เชื่อมต่อชีทไม่ได้ · กำลังแสดงข้อมูลล่าสุดที่มี';}
+ window.sssFoodBuffs=function(payload){
+   if(!pending)return;
+   if(!payload || !Array.isArray(payload.buffs) || !payload.buffs.every(r=>typeof r.name==='string' && Array.isArray(r.codes) && r.codes.every(c=>typeof c==='string' && /^\d{7}(?:\(Lv\d{1,2}\))?$/i.test(c)))){failed();return;}
+   BUFFS.splice(0,BUFFS.length,...payload.buffs);
+   cleanup();render();
+   foot.textContent='เชื่อมต่อชีทแล้ว · ตรวจข้อมูลล่าสุด '+new Date().toLocaleTimeString('th-TH')+' · อัปเดตทุก 60 วินาที';
+ };
+ function refresh(){
+   if(pending || document.hidden)return;
+   pending=true;active=document.createElement('script');
+   active.src=endpoint+'?callback=sssFoodBuffs&t='+Date.now();
+   active.onerror=failed;timer=setTimeout(failed,25000);document.body.append(active);
+ }
+ foot.textContent='กำลังเชื่อมต่อชีท…';refresh();
+ setInterval(refresh,60000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+})();
 </script></body></html>
